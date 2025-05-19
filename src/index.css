@@ -1,0 +1,18 @@
+:root {
+  --dark: #242424;
+  --accent: #77b1dd;
+}
+
+* {
+  margin: 0%;
+  padding: 0%;
+  box-sizing: border-box;
+  -webkit-user-select: none;
+  user-select: none;
+  font-family: Gilroy;
+}
+html,
+body {
+  height: 100%;
+  width: 100%;
+}
