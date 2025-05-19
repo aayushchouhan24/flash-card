@@ -23,6 +23,7 @@ const Card = ({ animationDuration = 4 }: { animationDuration?: number }) => {
   const targetRotation = useRef(0);
   const isRotating = useRef(false);
   const isQuestionPage = useRef(true);
+  const prevIsQuestionPage = useRef(true);
 
   const fixedPoint = useRef<RigidBodyType>(null);
   const ropeTop = useRef<RigidBodyType>(null);
@@ -60,8 +61,6 @@ const Card = ({ animationDuration = 4 }: { animationDuration?: number }) => {
   };
 
   const triggerRotation = useCallback(() => {
-    isQuestionPage.current = !!((targetRotation.current / Math.PI) % 2);
-
     card.current?.setAngvel({ x: 0, y: 2, z: 0 }, true);
     const currentPos = card.current?.translation();
     card.current?.setTranslation({
@@ -85,7 +84,6 @@ const Card = ({ animationDuration = 4 }: { animationDuration?: number }) => {
     flashcardEvents.on('cardChange', handleCardChange);
     flashcardEvents.on('flipCard', handleFlipCard);
 
-    // Clean up event listeners on unmount
     return () => {
       flashcardEvents.off('cardChange', handleCardChange);
       flashcardEvents.off('flipCard', handleFlipCard);
@@ -100,12 +98,25 @@ const Card = ({ animationDuration = 4 }: { animationDuration?: number }) => {
       if (progress >= 1) {
         cardRef.current.rotation.y = targetRotation.current;
         isRotating.current = false;
-        // Notify that the flip animation is complete
         flashcardEvents.emit('flipComplete');
       } else {
         const eased = elasticOut(progress);
         cardRef.current.rotation.y =
           startRotation.current + (targetRotation.current - startRotation.current) * eased;
+      }
+    }
+
+    // Update isQuestionPage based on current rotation
+    if (cardRef.current) {
+      const currentRotation = cardRef.current.rotation.y;
+      // Check if we're on the question side (even multiples of PI)
+      const newIsQuestionPage = !((Math.round(currentRotation / Math.PI) % 2));
+
+      // If the state changed, update and emit event
+      if (newIsQuestionPage !== prevIsQuestionPage.current) {
+        isQuestionPage.current = newIsQuestionPage;
+        prevIsQuestionPage.current = newIsQuestionPage;
+        flashcardEvents.emit('pageChange', newIsQuestionPage);
       }
     }
 

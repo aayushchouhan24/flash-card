@@ -39,29 +39,35 @@ const FlashcardControls = () => {
       console.log('Card flip animation completed');
     };
 
+    const handlePageChange = (isQuestionPage: boolean) => {
+      setShowingAnswer(!isQuestionPage);
+    };
+
     flashcardEvents.on('flipComplete', handleFlipComplete);
+    flashcardEvents.on('pageChange', handlePageChange);
 
     return () => {
       flashcardEvents.off('flipComplete', handleFlipComplete);
+      flashcardEvents.off('pageChange', handlePageChange);
     };
   }, []);
 
   const handleKnow = () => {
     flashcardEvents.emit('flipCard');
-    setShowingAnswer(true);
   };
 
   const handleDontKnow = () => {
     flashcardEvents.emit('flipCard');
-    setShowingAnswer(true);
   };
 
   const handleNext = () => {
     const nextIndex = (currentCardIndex + 1) % flashcards.length;
     setCurrentCardIndex(nextIndex);
 
-    setShowingAnswer(false);
+    // Flip the card back to the question side
+    flashcardEvents.emit('flipCard');
 
+    // Change to the next card
     flashcardEvents.emit('cardChange', nextIndex);
   };
 
