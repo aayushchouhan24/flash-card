@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { flashcards } from '../data/database';
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const flashcardEvents = {
   listeners: new Map<string, Function[]>(),
 
