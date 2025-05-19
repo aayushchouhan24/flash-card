@@ -1,20 +1,17 @@
-import { useState } from 'react';
+/* eslint-disable @typescript-eslint/no-unsafe-function-type */
+import { useState, useEffect } from 'react';
 import { flashcards } from '../data/database';
 
-// Create a global event system for communication between components
 export const flashcardEvents = {
-  // Event listeners
   listeners: new Map<string, Function[]>(),
-  
-  // Add event listener
+
   on(event: string, callback: Function) {
     if (!this.listeners.has(event)) {
       this.listeners.set(event, []);
     }
     this.listeners.get(event)?.push(callback);
   },
-  
-  // Remove event listener
+
   off(event: string, callback: Function) {
     const callbacks = this.listeners.get(event);
     if (callbacks) {
@@ -24,9 +21,8 @@ export const flashcardEvents = {
       }
     }
   },
-  
-  // Emit event
-  emit(event: string, ...args: any[]) {
+
+  emit(event: string, ...args: unknown[]) {
     const callbacks = this.listeners.get(event);
     if (callbacks) {
       callbacks.forEach(callback => callback(...args));
@@ -36,45 +32,71 @@ export const flashcardEvents = {
 
 const FlashcardControls = () => {
   const [currentCardIndex, setCurrentCardIndex] = useState(0);
-  
+  const [showingAnswer, setShowingAnswer] = useState(false);
+
+  useEffect(() => {
+    const handleFlipComplete = () => {
+      console.log('Card flip animation completed');
+    };
+
+    flashcardEvents.on('flipComplete', handleFlipComplete);
+
+    return () => {
+      flashcardEvents.off('flipComplete', handleFlipComplete);
+    };
+  }, []);
+
   const handleKnow = () => {
-    // Move to the next card
-    const nextIndex = (currentCardIndex + 1) % flashcards.length;
-    setCurrentCardIndex(nextIndex);
-    
-    // Emit event to update the card in the 3D scene
-    flashcardEvents.emit('cardChange', nextIndex);
+    flashcardEvents.emit('flipCard');
+    setShowingAnswer(true);
   };
-  
+
   const handleDontKnow = () => {
-    // Move to the next card
+    flashcardEvents.emit('flipCard');
+    setShowingAnswer(true);
+  };
+
+  const handleNext = () => {
     const nextIndex = (currentCardIndex + 1) % flashcards.length;
     setCurrentCardIndex(nextIndex);
-    
-    // Emit event to update the card in the 3D scene
+
+    setShowingAnswer(false);
+
     flashcardEvents.emit('cardChange', nextIndex);
   };
-  
+
   return (
     <div className="flashcard-controls">
       <div className="card-counter">
         Card {currentCardIndex + 1} of {flashcards.length}
       </div>
       <div className="button-container">
-        <button 
-          type="button"
-          onClick={handleDontKnow}
-          className="dont-know-btn"
-        >
-          Don't Know
-        </button>
-        <button 
-          type="button"
-          onClick={handleKnow}
-          className="know-btn"
-        >
-          Know
-        </button>
+        {!showingAnswer ? (
+          <>
+            <button
+              type="button"
+              onClick={handleDontKnow}
+              className="dont-know-btn"
+            >
+              Don't Know
+            </button>
+            <button
+              type="button"
+              onClick={handleKnow}
+              className="know-btn"
+            >
+              Know
+            </button>
+          </>
+        ) : (
+          <button
+            type="button"
+            onClick={handleNext}
+            className="next-btn"
+          >
+            Next
+          </button>
+        )}
       </div>
     </div>
   );

@@ -31,7 +31,7 @@ body {
   gap: 20px;
 }
 
-.know-btn, .dont-know-btn {
+.know-btn, .dont-know-btn, .next-btn {
   padding: 12px 30px;
   border: none;
   border-radius: 8px;
@@ -51,12 +51,20 @@ body {
   color: white;
 }
 
-.know-btn:hover, .dont-know-btn:hover {
+.next-btn {
+  background-color: #339af0;
+  color: white;
+  width: 100%;
+  padding: 15px 30px;
+  font-size: 18px;
+}
+
+.know-btn:hover, .dont-know-btn:hover, .next-btn:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 }
 
-.know-btn:active, .dont-know-btn:active {
+.know-btn:active, .dont-know-btn:active, .next-btn:active {
   transform: translateY(0);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }

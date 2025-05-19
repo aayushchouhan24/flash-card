@@ -3,7 +3,7 @@ import { RenderTexture, useGLTF, useTexture } from "@react-three/drei";
 import { extend, useFrame, useThree } from "@react-three/fiber";
 import { BallCollider, CuboidCollider, RigidBody, useRopeJoint, useSphericalJoint } from "@react-three/rapier";
 import { MeshLineGeometry, MeshLineMaterial } from "meshline";
-import { useRef, useMemo, useState, useEffect } from "react";
+import { useRef, useMemo, useState, useEffect, useCallback } from "react";
 import { GLTF, MeshLineMesh, RigidBodyType } from "../types/types";
 import CardTexture from "./CardTexture";
 import { flashcards } from "../data/database";
@@ -22,24 +22,7 @@ const Card = ({ animationDuration = 4 }: { animationDuration?: number }) => {
   const startRotation = useRef(0);
   const targetRotation = useRef(0);
   const isRotating = useRef(false);
-  let isQuestionPage = true;
-
-  useEffect(() => {
-    const handleCardChange = (index: number) => {
-      setCurrentCardIndex(index);
-      if (!isRotating.current) {
-        triggerRotation();
-      }
-    };
-
-    // Register event listener
-    flashcardEvents.on('cardChange', handleCardChange);
-
-    // Clean up event listener on unmount
-    return () => {
-      flashcardEvents.off('cardChange', handleCardChange);
-    };
-  }, []);
+  const isQuestionPage = useRef(true);
 
   const fixedPoint = useRef<RigidBodyType>(null);
   const ropeTop = useRef<RigidBodyType>(null);
@@ -76,9 +59,8 @@ const Card = ({ animationDuration = 4 }: { animationDuration?: number }) => {
     return Math.pow(2, -10 * t) * Math.sin((t - p / 4) * (2 * Math.PI) / p) + 1;
   };
 
-  const triggerRotation = () => {
-
-    isQuestionPage = !isQuestionPage;
+  const triggerRotation = useCallback(() => {
+    isQuestionPage.current = !!((targetRotation.current / Math.PI) % 2);
 
     card.current?.setAngvel({ x: 0, y: 2, z: 0 }, true);
     const currentPos = card.current?.translation();
@@ -92,10 +74,23 @@ const Card = ({ animationDuration = 4 }: { animationDuration?: number }) => {
     startRotation.current = currentY;
     targetRotation.current = Math.round((currentY + Math.PI) / Math.PI) * Math.PI;
 
-
     animationProgress.current = 0;
     isRotating.current = true;
-  };
+  }, []);
+
+  useEffect(() => {
+    const handleCardChange = (index: number) => setCurrentCardIndex(index);
+    const handleFlipCard = () => triggerRotation();
+
+    flashcardEvents.on('cardChange', handleCardChange);
+    flashcardEvents.on('flipCard', handleFlipCard);
+
+    // Clean up event listeners on unmount
+    return () => {
+      flashcardEvents.off('cardChange', handleCardChange);
+      flashcardEvents.off('flipCard', handleFlipCard);
+    };
+  }, [triggerRotation]);
 
   useFrame((_, delta) => {
     if (isRotating.current && cardRef.current) {
@@ -105,6 +100,8 @@ const Card = ({ animationDuration = 4 }: { animationDuration?: number }) => {
       if (progress >= 1) {
         cardRef.current.rotation.y = targetRotation.current;
         isRotating.current = false;
+        // Notify that the flip animation is complete
+        flashcardEvents.emit('flipComplete');
       } else {
         const eased = elasticOut(progress);
         cardRef.current.rotation.y =
@@ -157,7 +154,7 @@ const Card = ({ animationDuration = 4 }: { animationDuration?: number }) => {
         <RigidBody ref={card} {...segmentProps} position={[2, 0, 0]} rotation={[0, Math.PI / 2, 0]}>
           <CuboidCollider args={[0.8, 1.125, 0.01]} />
           <group scale={3} position={[0, -2.125, -0.05]}>
-            <group onClick={triggerRotation} ref={cardRef}>
+            <group ref={cardRef} onClick={triggerRotation}>
               <mesh geometry={nodes.card.geometry}>
                 <meshPhysicalMaterial roughness={1} clearcoat={.5} clearcoatRoughness={1} metalness={.3}>
                   <RenderTexture colorSpace={THREE.SRGBColorSpace} attach="map" width={1024} height={1024}>
