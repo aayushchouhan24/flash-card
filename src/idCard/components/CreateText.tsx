@@ -10,10 +10,11 @@ const CreateText = ({ children, preventWordBreak, ...opts }: CreateTextProps) =>
     return (
         <Text
             scale={[1, -1, 1]}
-            maxWidth={450}
+            maxWidth={480}
             overflowWrap={preventWordBreak ? "normal" : "break-word"}
             font={opts.font || "/font/noto.ttf"}
             color={opts.color || "white"}
+            textAlign="center"
             {...opts}
         >
             {children}

@@ -38,14 +38,14 @@ export default function CardTexture({ question, answer }: FlashCard) {
             </mesh>s
 
             <group position={[256, 360, 0]}>
-                <CreateText fontSize={60} lineHeight={0.9}>
+                <CreateText fontSize={50}>
                     {question}
                 </CreateText>
             </group>
 
             <group position={[768, 360, 0]}>
                 <group ref={codeRef}>
-                    <CreateText fontSize={60} lineHeight={0.9}>
+                    <CreateText fontSize={40}>
                         {answer}
                     </CreateText>
                 </group>

@@ -3,9 +3,11 @@ import { RenderTexture, useGLTF, useTexture } from "@react-three/drei";
 import { extend, useFrame, useThree } from "@react-three/fiber";
 import { BallCollider, CuboidCollider, RigidBody, useRopeJoint, useSphericalJoint } from "@react-three/rapier";
 import { MeshLineGeometry, MeshLineMaterial } from "meshline";
-import { useRef, useMemo } from "react";
+import { useRef, useMemo, useState, useEffect } from "react";
 import { GLTF, MeshLineMesh, RigidBodyType } from "../types/types";
 import CardTexture from "./CardTexture";
+import { flashcards } from "../data/database";
+import { flashcardEvents } from "./FlashcardControls";
 
 extend({ MeshLineGeometry, MeshLineMaterial });
 useGLTF.preload("/card.glb");
@@ -14,11 +16,30 @@ useTexture.preload("/band.jpg");
 const segmentProps = { type: "dynamic", canSleep: true, colliders: false, angularDamping: 2, linearDamping: 2 } as const;
 
 const Card = ({ animationDuration = 4 }: { animationDuration?: number }) => {
+  const [currentCardIndex, setCurrentCardIndex] = useState(0);
   const cardRef = useRef<THREE.Group>(null);
   const animationProgress = useRef(0);
   const startRotation = useRef(0);
   const targetRotation = useRef(0);
   const isRotating = useRef(false);
+  let isQuestionPage = true;
+
+  useEffect(() => {
+    const handleCardChange = (index: number) => {
+      setCurrentCardIndex(index);
+      if (!isRotating.current) {
+        triggerRotation();
+      }
+    };
+
+    // Register event listener
+    flashcardEvents.on('cardChange', handleCardChange);
+
+    // Clean up event listener on unmount
+    return () => {
+      flashcardEvents.off('cardChange', handleCardChange);
+    };
+  }, []);
 
   const fixedPoint = useRef<RigidBodyType>(null);
   const ropeTop = useRef<RigidBodyType>(null);
@@ -56,6 +77,9 @@ const Card = ({ animationDuration = 4 }: { animationDuration?: number }) => {
   };
 
   const triggerRotation = () => {
+
+    isQuestionPage = !isQuestionPage;
+
     card.current?.setAngvel({ x: 0, y: 2, z: 0 }, true);
     const currentPos = card.current?.translation();
     card.current?.setTranslation({
@@ -137,7 +161,10 @@ const Card = ({ animationDuration = 4 }: { animationDuration?: number }) => {
               <mesh geometry={nodes.card.geometry}>
                 <meshPhysicalMaterial roughness={1} clearcoat={.5} clearcoatRoughness={1} metalness={.3}>
                   <RenderTexture colorSpace={THREE.SRGBColorSpace} attach="map" width={1024} height={1024}>
-                    <CardTexture question="What is 2 + 2?" answer="It's 4" />
+                    <CardTexture
+                      question={flashcards[currentCardIndex].question}
+                      answer={flashcards[currentCardIndex].answer}
+                    />
                   </RenderTexture>
                 </meshPhysicalMaterial>
               </mesh>
